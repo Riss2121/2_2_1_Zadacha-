@@ -1,57 +1,43 @@
-// Указывает, что класс находится в пакете сервисного слоя приложения
 package hiber.service;
 
-// Импорт интерфейса DAO для взаимодействия с базой данных
 import hiber.dao.UserDao;
-
-// Импорт модели User — основной сущности, с которой работает сервис
+import hiber.model.Car;
 import hiber.model.User;
-
-// Автоматическое внедрение зависимостей (устаревший подход через поле; см. рекомендации ниже)
-import org.springframework.beans.factory.annotation.Autowired;
-
-// Помечает класс как Spring-компонент уровня бизнес-логики (сервис)
 import org.springframework.stereotype.Service;
-
-// Включает управление транзакциями на уровне методов
 import org.springframework.transaction.annotation.Transactional;
 
-// Импорт интерфейса List для работы с коллекциями
 import java.util.List;
 
-// Аннотация @Service регистрирует класс как Spring-бин и указывает его роль — сервисный слой
 @Service
-// Реализация интерфейса UserService: содержит бизнес-логику и делегирует операции DAO
 public class UserServiceImp implements UserService {
 
-   // ❗ Рекомендуется избегать внедрения зависимостей через поле (@Autowired на поле)
-   // Лучше использовать конструкторную инъекцию (она не требует @Autowired в новых версиях Spring)
-   @Autowired
-   private UserDao userDao;
+    private final UserDao userDao;
 
-   // Метод добавления пользователя. Оборачивается в транзакцию.
-   @Override
-   @Transactional  // Открывает новую транзакцию; при ошибке — автоматический откат
-   public void add(User user) {
-      // Делегирует сохранение пользователя DAO-слою
-      userDao.add(user);
-   }
+    public UserServiceImp(UserDao userDao) {
+        this.userDao = userDao;
+    }
 
-   // Метод получения всех пользователей. Транзакция только для чтения — повышает производительность
-   @Override
-   @Transactional(readOnly = true)  // Указывает, что транзакция не будет модифицировать данные
-   public List<User> listUsers() {
-      // Возвращает список всех пользователей через DAO
-      return userDao.listUsers();
-   }
+    @Transactional
+    @Override
+    public void add(User user) {
+        userDao.add(user);
+    }
 
-   // Метод поиска пользователей по модели и серии автомобиля.
-   // Хотя метод только читает данные, он не помечен как readOnly.
-   // 🔸 РЕКОМЕНДАЦИЯ: добавить readOnly = true для согласованности и производительности
-   @Override
-   @Transactional(readOnly = true)  // ← ИСПРАВЛЕНО: добавлен readOnly
-   public List<User> userBySeriesAndModel(String model, int series) {
-      // Передаёт параметры в DAO и возвращает результат
-      return userDao.userBySeriesAndModel(model, series);
-   }
+    @Transactional(readOnly = true)
+    @Override
+    public List<User> listUsers() {
+        return userDao.listUsers();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public User getUserByCar(String model, int series) {
+        return userDao.getUserByCar(model, series);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public User getUserCar(Car car) {
+        return userDao.getUserCar(car);
+    }
 }

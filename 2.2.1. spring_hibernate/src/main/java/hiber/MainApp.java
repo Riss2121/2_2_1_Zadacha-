@@ -1,64 +1,81 @@
-// Пакет приложения (корневой)
 package hiber;
 
-// Импорт конфигурационного класса Spring
 import hiber.config.AppConfig;
-
-// Импорт модели автомобиля
 import hiber.model.Car;
-
-// Импорт модели пользователя
 import hiber.model.User;
-
-// Импорт сервисного интерфейса для работы с пользователями
 import hiber.service.UserService;
-
-// Контекст Spring, основанный на Java-аннотациях (без XML)
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-
-// Импорт исключения SQLException (хотя оно не используется — см. замечание ниже)
+import javax.persistence.NoResultException;
 import java.sql.SQLException;
-
-// Импорт List для работы с коллекциями
 import java.util.List;
 
-// Главный класс приложения — точка входа
 public class MainApp {
+    public static void main(String[] args) throws SQLException {
+        AnnotationConfigApplicationContext context =
+                new AnnotationConfigApplicationContext(AppConfig.class);
 
-   // Точка входа в приложение
-   // ❗ Исправлено: исключение SQLException не нужно — оно не выбрасывается в коде
-   public static void main(String[] args) {
-      // Создаём контекст Spring на основе Java-конфигурации (AppConfig)
-      // Spring загрузит все бины, настроит Hibernate, DataSource и т.д.
-      AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+        UserService userService = context.getBean(UserService.class);
 
-      // Получаем бин UserService из контекста Spring (реализация — UserServiceImp)
-      UserService userService = context.getBean(UserService.class);
+        User Denis = (new User("Denis", "Terentyev", "Denis@mail.ru"));
+        User Daniil =(new User("Daniil", "Pyrkh", "Daniil@mail.ru"));
+        User Aleksey =(new User("Aleksey", "Terentyev", "Aleksey@mail.ru"));
+        User Sana =(new User("Renat", "Araslanov", "Renat@mail.ru"));
 
-      // Создаём 4 объекта Car для привязки к пользователям
-      Car car1 = new Car("model1", 1);
-      Car car2 = new Car("model2", 2);
-      Car car3 = new Car("model3", 3);
-      Car car4 = new Car("model4", 4);
+        Car Audi = new Car("Audi", 5);
+        Car AudiBad = new Car("Audi", 6);
+        Car Mercedes = new Car("Mercedes", 200);
+        Car Volkswagen = new Car("Volkswagen", 2);
+        Car Toyota = new Car("Toyota", 1);
 
-      // Добавляем 5 пользователей:
-      // - первые 4 — с автомобилями,
-      // - последний — без автомобиля (поле car = null)
-      userService.add(new User("User1", "Lastname1", "user1@mail.ru", car1));
-      userService.add(new User("User2", "Lastname2", "user2@mail.ru", car2));
-      userService.add(new User("User3", "Lastname3", "user3@mail.ru", car3));
-      userService.add(new User("User4", "Lastname4", "user4@mail.ru", car4));
-      userService.add(new User("User5", "Lastname5", "user5@mail.ru")); // без машины
+        List<User> users = userService.listUsers();
+        for (User user : users) {
+            System.out.println("Id = "+user.getId());
+            System.out.println("First Name = "+user.getFirstName());
+            System.out.println("Last Name = "+user.getLastName());
+            System.out.println("Email = "+user.getEmail());
+            System.out.println();
+        }
 
-      // Получаем и выводим всех пользователей
-      List<User> users = userService.listUsers();
-      System.out.println("=== Список всех пользователей ===");
-      for (User user : users) {
-         System.out.println(user);
-      }
+        userService.add(Denis.setCar(Audi).setUser(Denis));
+        userService.add(Sana.setCar(Toyota).setUser(Sana));
+        userService.add(Daniil.setCar(Mercedes).setUser(Daniil));
+        userService.add(Aleksey.setCar(Volkswagen).setUser(Aleksey));
 
 
-      // Закрываем Spring-контекст — освобождает ресурсы (соединения с БД, пул и т.д.)
-      context.close();
-   }
+        for (User user : userService.listUsers()) {
+            System.out.println(user + " " + user.getCar());
+        }
+
+
+        System.out.println(userService.getUserByCar("Audi", 5));
+
+        try {
+            System.out.println(userService.getUserCar(Audi));
+        } catch (NoResultException e) {
+            System.out.println("Пользователь с авто " + Audi + " не найден");
+        }
+
+
+        try {
+            System.out.println(userService.getUserCar(AudiBad));
+        } catch (NoResultException e) {
+            System.out.println("Пользователь с авто " + AudiBad + " не найден");
+        }
+
+
+        try {
+            System.out.println(userService.getUserByCar("Audi", 6));
+        } catch (NoResultException e) {
+            System.out.println("Пользователь с авто " + AudiBad + " не найден");
+        }
+
+
+        try {
+            User notFoundUser = userService.getUserByCar("Audi", 6);
+        } catch (NoResultException e) {
+            System.out.println("Пользователь с авто " + AudiBad + " не найден");
+        }
+
+        context.close();
+    }
 }
